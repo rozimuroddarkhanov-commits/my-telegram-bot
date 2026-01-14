@@ -1,153 +1,127 @@
 import telebot
 from telebot import types
 
-# -------------------
-# TOKEN VA ADMIN ID
-# -------------------
 TOKEN = "8325286976:AAF5VY_C5GFWNijTUEAZtnX7lm3wDPhBIK0"
 ADMIN_ID = 7744385537
-ADMIN_LINK = "https://t.me/premium_vza"
 
 bot = telebot.TeleBot(TOKEN)
 
-# -------------------
-# BOSHLANG'ICH /start
-# -------------------
+# ---------------------------------------------------------
+# VIDEOLAR UCHUN FILE_ID LAR (Buni o'zingiznikiga almashtirasiz)
+# ---------------------------------------------------------
+video_files = {
+    # Asosiy davlatlar
+    "🇯🇵 Yaponiya": "https://t.me/c/3667231673/16",
+    "🇬🇧 Angliya": "https://t.me/c/3667231673/15",
+    "🇨🇦 Kanada": "https://t.me/c/3667231673/18",
+    "🇺🇸 Amerika": "https://t.me/c/3667231673/12",
+    "🇸🇦 Arabiston": "https://t.me/c/3667231673/11",
+    
+    # Shengen Top 10 davlatlari uchun alohida videolar
+    "Fransiya": "https://t.me/c/3667231673/6",
+    "Italiya": "https://t.me/c/3667231673/10",
+    "Germaniya": "https://t.me/c/3667231673/9",
+    "Ispaniya": "https://t.me/c/3667231673/5",
+    "Gretsiya": "https://t.me/c/3667231673/7",
+    "Shveytsariya": "https://t.me/c/3667231673/8",
+    "Niderlandiya": "https://t.me/c/3667231673/4",
+    "Avstriya": "https://t.me/c/3667231673/3",
+    "Chexiya": "https://t.me/c/3667231673/17",
+    "Islandiya": "https://t.me/c/3667231673/2"
+}
+
+SHENGEN_TOP_10 = [
+    "Fransiya", "Italiya", "Germaniya", "Ispaniya", "Gretsiya",
+    "Shveytsariya", "Niderlandiya", "Avstriya", "Chexiya", "Islandiya"
+]
+
+# --- 1. START ---
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("🇺🇿 Uzbek", "🇷🇺 Russian")
     bot.send_message(message.chat.id, "Tilni tanlang / Выберите язык:", reply_markup=markup)
 
-# -------------------
-# TIL TANLASH
-# -------------------
+# --- 2. ISM VA RAQAM (Ketma-ketlik siz aytgandek) ---
 @bot.message_handler(func=lambda message: message.text in ["🇺🇿 Uzbek", "🇷🇺 Russian"])
 def choose_language(message):
     lang = message.text
-    markup = types.ReplyKeyboardRemove()
-    
-    text = "Ism va familiyangizni kiriting:" if lang == "🇺🇿 Uzbek" else "Введите ваше имя и фамилию:"
-    msg = bot.send_message(message.chat.id, text, reply_markup=markup)
+    text = "Ism va familiyangizni kiriting:" if lang == "🇺🇿 Uzbek" else "Введите имя и фамилию:"
+    msg = bot.send_message(message.chat.id, text, reply_markup=types.ReplyKeyboardRemove())
     bot.register_next_step_handler(msg, get_name, lang)
 
-# -------------------
-# ISM/FAMILIYA
-# -------------------
 def get_name(message, lang):
     name = message.text
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    if lang == "🇺🇿 Uzbek":
-        btn_phone = types.KeyboardButton("📞 Raqamni yuborish", request_contact=True)
-        back, text = "⬅️ Ortga", "Telefon raqamingizni yuboring:"
-    else:
-        btn_phone = types.KeyboardButton("📞 Отправить номер", request_contact=True)
-        back, text = "⬅️ Назад", "Отправьте ваш номер телефона:"
-    
-    markup.add(btn_phone)
-    markup.add(back)
-    msg = bot.send_message(message.chat.id, text, reply_markup=markup)
+    btn = types.KeyboardButton("📞 Raqamni yuborish" if lang == "🇺🇿 Uzbek" else "📞 Отправить номер", request_contact=True)
+    markup.add(btn)
+    msg = bot.send_message(message.chat.id, "Raqamni yuboring:", reply_markup=markup)
     bot.register_next_step_handler(msg, get_phone, lang, name)
 
-# -------------------
-# TELEFON RAQAMI
-# -------------------
 def get_phone(message, lang, name):
-    if message.text in ["⬅️ Ortga", "⬅️ Назад"]:
-        return choose_language(message)
-
     phone = message.contact.phone_number if message.contact else message.text
+    show_main_menu(message, lang, name, phone)
 
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    if lang == "🇺🇿 Uzbek":
-        markup.add("🇯🇵 Yaponiya", "🇪🇺 Shengen", "🇬🇧 Angliya")
-        markup.add("🇨🇦 Kanada", "🇺🇸 Amerika", "🇸🇦 Arabiston")
-        markup.add("⬅️ Ortga")
-        bot.send_message(message.chat.id, "Qaysi davlatga sayohat qilishni istaysiz?", reply_markup=markup)
-    else:
-        markup.add("🇯🇵 Япония", "🇪🇺 Шенген", "🇬🇧 Англия")
-        markup.add("🇨🇦 Канада", "🇺🇸 Америка", "🇸🇦 Саудовская Аравия")
-        markup.add("⬅️ Назад")
-        bot.send_message(message.chat.id, "В какую страну вы хотите поехать?", reply_markup=markup)
-    
+# --- 3. ASOSIY MENYU ---
+def show_main_menu(message, lang, name, phone):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    markup.add("🇯🇵 Yaponiya", "🇪🇺 Shengen", "🇬🇧 Angliya", "🇨🇦 Kanada", "🇺🇸 Amerika", "🇸🇦 Arabiston")
+    bot.send_message(message.chat.id, "Davlatni tanlang:", reply_markup=markup)
     bot.register_next_step_handler(message, get_country, lang, name, phone)
 
-# -------------------
-# DAVLAT TANLASH VA OXIRGI MENYULAR
-# -------------------
+# --- 4. SHENGEN TANLANGANDA ---
 def get_country(message, lang, name, phone):
     country = message.text
-    if country in ["⬅️ Ortga", "⬅️ Назад"]:
-        return get_name(message, lang)
+    if country == "🇪🇺 Shengen":
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        buttons = [types.KeyboardButton(d) for d in SHENGEN_TOP_10]
+        markup.add(*buttons)
+        markup.add("⬅️ Ortga")
+        msg = bot.send_message(message.chat.id, "Shengen davlatini tanlang:", reply_markup=markup)
+        bot.register_next_step_handler(msg, get_shengen_detail, lang, name, phone)
+        return
+    process_final(message, lang, name, phone, country)
 
-    info_dict = {
-        "uz": {
-            "🇯🇵 Yaponiya": "Siz oldin Yaponiyaga bormaganmisiz?...",
-            "🇪🇺 Shengen": "Shengen hududidagi Evropaning go‘zal shaharlarini...",
-            "🇬🇧 Angliya": "Angliyaga tashrif buyurib, Londonning tarixiy...",
-            "🇨🇦 Kanada": "Kanadaga sayohat qilmoqchimisiz?...",
-            "🇺🇸 Amerika": "Amerikaga sayohat qilmoqchimisiz?...",
-            "🇸🇦 Arabiston": "Saudiya Arabistoniga borib, tarixiy masjidlar..."
-        },
-        "ru": {
-            "🇯🇵 Япония": "Вы раньше не были в Японии?...",
-            "🇪🇺 Шенген": "Вы хотите открыть для себя красивые города...",
-            "🇬🇧 Англия": "Хотите посетить Англию...",
-            "🇨🇦 Канада": "Хотите поехать в Канаду?...",
-            "🇺🇸 Америка": "Планируете поездку в Америку?...",
-            "🇸🇦 Саудовская Аравия": "Хотите посетить Саудовскую Аравию?..."
-        }
+def get_shengen_detail(message, lang, name, phone):
+    if message.text == "⬅️ Ortga":
+        return show_main_menu(message, lang, name, phone)
+    process_final(message, lang, name, phone, message.text, is_shengen=True)
+
+# --- 5. YAKUNIY BOSQICH (Video + Info + Admin) ---
+def process_final(message, lang, name, phone, country, is_shengen=False):
+    # Har bir davlat uchun info (Namuna)
+    info_texts = {
+        "Fransiya": "Eyfel minorasi va Parij ko'chalariga sayohat!",
+        "Italiya": "Rim, Venetsiya va eng mazali pitsalar yurti!",
+        "🇯🇵 Yaponiya": "Kunchiqar mamlakatga viza va sayohat xizmatlari."
     }
-
-    current_info = info_dict["uz"].get(country) if lang=="🇺🇿 Uzbek" else info_dict["ru"].get(country)
-    if not current_info:
-        return get_phone(message, lang, name)
-
-    # Davlat haqida ma'lumot
-    bot.send_message(message.chat.id, current_info)
-
-    # Oxirgi menyu tugmalari
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    if lang == "🇺🇿 Uzbek":
-        btn_price = "💰 Narxni bilish (Lichka)"
-        btn_contact = "📞 Mutaxassis bog'lansin"
-        back = "⬅️ Ortga"
-        prompt = "Kerakli bo'limni tanlang:"
-    else:
-        btn_price = "💰 Узнать цену (Личка)"
-        btn_contact = "📞 Связаться со специалистом"
-        back = "⬅️ Назад"
-        prompt = "Выберите нужный раздел:"
-
-    markup.add(btn_price, btn_contact, back)
-    msg = bot.send_message(message.chat.id, prompt, reply_markup=markup)
-    bot.register_next_step_handler(msg, final_step, lang, name, phone, country)
-
-# -------------------
-# OXIRGI BOSQICH MANTIQI
-# -------------------
-def final_step(message, lang, name, phone, country):
-    text = message.text
-
-    if text in ["⬅️ Ortga", "⬅️ Назад"]:
-        return get_phone(message, lang, name)
-
-    if "💰 Narxni bilish" in text or "💰 Узнать цену" in text:
-        # Inline tugma bilan lichkaga yuborish
-        inline = types.InlineKeyboardMarkup()
-        btn_text = "Yozish ✍️" if lang == "🇺🇿 Uzbek" else "Написать ✍️"
-        inline.add(types.InlineKeyboardButton(text=btn_text, url=ADMIN_LINK))
-        bot.send_message(message.chat.id, "Pastdagi tugmani bosing va bizga yozing:", reply_markup=inline)
-        
-        # Adminga xabar yuborish (shunchaki foydalanuvchi qiziqqanini bilish uchun)
-        bot.send_message(ADMIN_ID, f"👀 Foydalanuvchi narxni bilish uchun lichkaga o'tdi:\n👤 {name}\n📞 {phone}")
-
-    elif "📞 Mutaxassis" in text or "📞 Связаться" in text:
-        bot.send_message(message.chat.id, "✅ So'rovingiz qabul qilindi. Mutaxassis tez orada bog'lanadi!", reply_markup=types.ReplyKeyboardRemove())
-        bot.send_message(ADMIN_ID, f"🔔 YANGI ARIZA (Qayta aloqa):\n👤 Ism: {name}\n📞 Tel: {phone}\n🌍 Davlat: {country}")
     
-    else:
-        # Agar boshqa narsa yozsa, menyuni qayta ko'rsatish
-        return get_country(message, lang, name, phone)
+    info = info_texts.get(country, f"{country} uchun viza va sayohat ma'lumotlari.")
+    video_id = video_files.get(country)
 
+    # Videoni yuborish
+    if video_id and video_id.startswith("ID_") == False: # ID o'zgartirilgan bo'lsa
+        bot.send_video(message.chat.id, video_id, caption=info)
+    else:
+        bot.send_message(message.chat.id, info)
+
+    # Adminga arizani yuborish
+    price = 300 if is_shengen else 0 # Narxlarni o'zingiz sozlashingiz mumkin
+    admin_text = (
+        f"📝 Yangi ariza!\n\n👤 Ism: {name}\n📞 Tel: {phone}\n"
+        f"🌍 Davlat: {'Shengen ('+country+')' if is_shengen else country}\n"
+        f"💰 Xizmat haqi: {price if price > 0 else '350'}$ \n💡 Qiziqish bildirdi ✅"
+    )
+    bot.send_message(ADMIN_ID, admin_text)
+    bot.send_message(message.chat.id, "Raxmat! Ma'lumotlaringiz qabul qilindi.", reply_markup=types.ReplyKeyboardRemove())
+
+# --- FILE_ID larni olish uchun yordamchi funksiya ---
+@bot.message_handler(content_types=['video'])
+def capture_video_id(message):
+    bot.reply_to(message, f"Ushbu videoning ID raqami:\n\n`{message.video.file_id}`", parse_mode="Markdown")
+
+@bot.message_handler(content_types=['video'])
+def get_video_id(message):
+    # Bu kod botga video yuborsangiz, uning ID raqamini sizga qaytaradi
+    bot.reply_to(message, f"Siz yuborgan videoning ID raqami:\n\n`{message.video.file_id}`", parse_mode="Markdown")
 bot.polling()
